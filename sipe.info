@@ -1,0 +1,4 @@
+name = Simple in place editor integration
+description = This is API module,  develop to add ability to easily edit some site text. See README.txt for more details.
+package = Administration
+core = 7.x

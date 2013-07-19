@@ -1,0 +1,140 @@
+<?php
+
+/**
+ * @file
+ * Very simple module to make variables editable by end user.
+ *
+ * Main function to make text editable inline.
+ */
+
+/**
+ * Implements hook_permission().
+ */
+function sipe_permission() {
+  return array(
+    'use sipe' => array(
+      'title' => t('Use inline editor'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function sipe_menu() {
+  $items = array();
+
+  $items['sipe/ajax'] = array(
+    'page callback' => 'sipe_ajax_callback',
+    'access arguments' => array('use sipe'),
+    'type' => MENU_CALLBACK
+  );
+
+  return $items;
+}
+
+/**
+ * Implements of hook_library().
+ * @return array
+ */
+function sipe_library() {
+  $libraries['jquery.editinplace'] = array(
+    'title' => 'jQuery editinplace',
+    'website' => 'http://code.google.com/p/jquery-in-place-editor/',
+    'version' => '2.2.1',
+    'js' => array(
+      'sites/all/libraries/jquery-editinplace/lib/jquery.editinplace.js' => array(),
+    ),
+    'dependencies' => array(
+      array('system', 'drupal.ajax'),
+    ),
+  );
+  return $libraries;
+}
+
+/**
+ * Main function.
+ * Get variable value and add var for later using in hook_variable_info().
+ * @param type $name
+ * @param type $default
+ * @param type $langcode
+ * @return string
+ * @throws Exception
+ */
+function sipe_variable_get($name, $default = NULL, $langcode = NULL) {
+  if (!empty($default) && !is_scalar($default)) {
+    throw new Exception('Only scalar values are avaliable.');
+  }
+
+  if (!$langcode) {
+    $langcode = $GLOBALS['language']->language;
+  }
+
+  $setting = array();
+  $setting['sipe']['inlineditelements'][] = $name;
+  drupal_add_js($setting, 'setting');
+
+  $variable = variable_get($name, array());
+
+  $ret = array(
+    '#markup' => $default
+  );
+
+  if (!is_array($variable)) {
+    $variable = (array) $variable;
+  }
+
+  if (isset($variable[$langcode]) && !empty($variable[$langcode])) {
+    $ret['#markup'] = $variable[$langcode];
+  }
+
+  $attributes = array(
+    'class' => "sipe-editable-variable $name-$langcode",
+    'id' => $name
+  );
+  $ret['#prefix'] = '<span ' . drupal_attributes($attributes) . ' >';
+  $ret['#suffix'] = '</span>';
+
+  return render($ret);
+}
+
+/**
+ * Implements hook_init().
+ */
+function sipe_init() {
+  if (user_access('use sipe')) {
+    drupal_add_library('sipe', 'jquery.editinplace');
+    drupal_add_js(drupal_get_path('module', 'sipe') . '/sipe.js');
+  }
+}
+
+/**
+ * Menu callback.
+ * Set new value for variable.
+ */
+function sipe_ajax_callback () {
+  $update_value = '';
+
+  $element_id = '';
+
+  $langcode = $GLOBALS['language']->language;
+
+  if (isset($_POST['langcode']) && !empty($_POST['langcode'])) {
+    $langcode = $_POST['langcode'];
+  }
+  if (isset($_POST['update_value']) && !empty($_POST['update_value'])) {
+    $update_value = $_POST['update_value'];
+  }
+  if (isset($_POST['element_id']) && !empty($_POST['element_id'])) {
+    $element_id = $_POST['element_id'];
+  }
+
+  $variable = variable_get($element_id, array());
+  if (!is_array($variable)) {
+    $variable = (array) $variable;
+  }
+  $variable[$langcode] = $update_value;
+  variable_set($element_id, $variable);
+  exit($variable[$langcode]);
+
+}

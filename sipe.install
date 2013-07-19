@@ -1,0 +1,35 @@
+<?php
+
+/**
+ * @file
+ * TODO: Enter file description here.
+ */
+
+
+/**
+ * Implements hook_schema().
+ */
+function sipe_schema() {
+  $schema['sipe_vars'] = array(
+    'description' => 'The base table for sipe module.',
+    'fields' => array(
+      'vid' => array(
+        'description' => 'The primary identifier for a node.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE),
+      'variable' => array(
+        'description' => 'The var name.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+     ),
+    ),
+    'unique keys' => array(
+      'variable'     => array('variable')
+      ),
+    'primary key' => array('vid'),
+  );
+  return $schema;
+}
+
